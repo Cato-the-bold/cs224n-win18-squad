@@ -23,7 +23,7 @@ import os
 from tqdm import tqdm
 import numpy as np
 from six.moves import xrange
-from nltk.tokenize.moses import MosesDetokenizer
+from mosestokenizer import MosesDetokenizer
 
 from preprocessing.squad_preprocess import data_from_json, tokenize
 from vocab import UNK_ID, PAD_ID
@@ -241,11 +241,11 @@ def generate_answers(session, model, word2id, qn_uuid_data, context_token_data, 
     data_size = len(qn_uuid_data)
     num_batches = ((data_size-1) / model.FLAGS.batch_size) + 1
     batch_num = 0
-    detokenizer = MosesDetokenizer()
 
     print "Generating answers..."
 
-    for batch in get_batch_generator(word2id, qn_uuid_data, context_token_data, qn_token_data, model.FLAGS.batch_size, model.FLAGS.context_len, model.FLAGS.question_len):
+    for batch in get_batch_generator(word2id, qn_uuid_data, context_token_data, qn_token_data, model.FLAGS.batch_size,
+                                     model.FLAGS.context_len, model.FLAGS.question_len):
 
         # Get the predicted spans
         pred_start_batch, pred_end_batch = model.get_start_end_pos(session, batch)
@@ -269,7 +269,8 @@ def generate_answers(session, model, word2id, qn_uuid_data, context_token_data, 
 
             # Detokenize and add to dict
             uuid = batch.uuids[ex_idx]
-            uuid2ans[uuid] = detokenizer.detokenize(pred_ans_tokens, return_str=True)
+            with MosesDetokenizer('en') as detokenize:
+                uuid2ans[uuid] = detokenize(pred_ans_tokens)
 
         batch_num += 1
 

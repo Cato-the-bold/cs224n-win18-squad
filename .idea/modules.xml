@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/../a-DNN-models/.idea/CNN-models.iml" filepath="$PROJECT_DIR$/../a-DNN-models/.idea/CNN-models.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../alpha/.idea/alpha.iml" filepath="$PROJECT_DIR$/../alpha/.idea/alpha.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/cs224n-win18-squad.iml" filepath="$PROJECT_DIR$/.idea/cs224n-win18-squad.iml" />
+    </modules>
+  </component>
+</project>

@@ -22,10 +22,9 @@ import io
 import json
 import sys
 import logging
-
+import importlib
 import tensorflow as tf
 
-from qa_model import QAModel
 from vocab import get_glove
 from official_eval_helper import get_json_data, generate_answers
 
@@ -36,25 +35,33 @@ MAIN_DIR = os.path.relpath(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 DEFAULT_DATA_DIR = os.path.join(MAIN_DIR, "data") # relative path of data dir
 EXPERIMENTS_DIR = os.path.join(MAIN_DIR, "experiments") # relative path of experiments dir
 
+tf.app.flags.DEFINE_string("model", "QAModel", "Which Model to use, the class name.")
+tf.app.flags.DEFINE_bool("discard_long", True, "We discard any examples which are longer than our context_len or question_len.")
+tf.app.flags.DEFINE_bool("debug", False, "debug?")
 
 # High-level options
 tf.app.flags.DEFINE_integer("gpu", 0, "Which GPU to use, if you have multiple.")
 tf.app.flags.DEFINE_string("mode", "train", "Available modes: train / show_examples / official_eval")
 tf.app.flags.DEFINE_string("experiment_name", "", "Unique name for your experiment. This will create a directory by this name in the experiments/ directory, which will hold all data related to this experiment")
-tf.app.flags.DEFINE_integer("num_epochs", 0, "Number of epochs to train. 0 means train indefinitely")
+tf.app.flags.DEFINE_integer("num_epochs", 3, "Number of epochs to train. 0 means train indefinitely")
 
 # Hyperparameters
 tf.app.flags.DEFINE_float("learning_rate", 0.001, "Learning rate.")
 tf.app.flags.DEFINE_float("max_gradient_norm", 5.0, "Clip gradients to this norm.")
 tf.app.flags.DEFINE_float("dropout", 0.15, "Fraction of units randomly dropped on non-recurrent connections.")
-tf.app.flags.DEFINE_integer("batch_size", 100, "Batch size to use")
+tf.app.flags.DEFINE_integer("batch_size", 10, "Batch size to use")
 tf.app.flags.DEFINE_integer("hidden_size", 200, "Size of the hidden states")
 tf.app.flags.DEFINE_integer("context_len", 600, "The maximum context length of your model")
 tf.app.flags.DEFINE_integer("question_len", 30, "The maximum question length of your model")
-tf.app.flags.DEFINE_integer("embedding_size", 100, "Size of the pretrained word vectors. This needs to be one of the available GloVe dimensions: 50/100/200/300")
+tf.app.flags.DEFINE_integer("embedding_size", 300, "Size of the pretrained word vectors. This needs to be one of the available GloVe dimensions: 50/100/200/300")
+
+tf.app.flags.DEFINE_integer("max_word_len", 0, "The maximum length of a word ")
+tf.app.flags.DEFINE_integer("char_embedding_size", 20, "Size of the char embedding vectors.")
+tf.app.flags.DEFINE_integer("char_hidden_size", 100, "Size of the char hidden vectors.")
+tf.app.flags.DEFINE_integer("char_filter_size", 11, "Size of the char embedding vectors.")
 
 # How often to print, save, eval
-tf.app.flags.DEFINE_integer("print_every", 1, "How many iterations to do per print.")
+tf.app.flags.DEFINE_integer("print_every", 10, "How many iterations to do per print.")
 tf.app.flags.DEFINE_integer("save_every", 500, "How many iterations to do per save.")
 tf.app.flags.DEFINE_integer("eval_every", 500, "How many iterations to do per calculating loss/f1/em on dev set. Warning: this is fairly time-consuming so don't do it too often.")
 tf.app.flags.DEFINE_integer("keep", 1, "How many checkpoints to keep. 0 indicates keep all (you shouldn't need to do keep all though - it's very storage intensive).")
@@ -133,7 +140,10 @@ def main(unused_argv):
     dev_ans_path = os.path.join(FLAGS.data_dir, "dev.span")
 
     # Initialize model
-    qa_model = QAModel(FLAGS, id2word, word2id, emb_matrix)
+    module = importlib.import_module(FLAGS.model, package=__package__)
+    model_cls = getattr(module, FLAGS.model)
+    print "Module:{}".format(model_cls)
+    qa_model = model_cls(FLAGS, id2word, word2id, emb_matrix)
 
     # Some GPU settings
     config=tf.ConfigProto()
@@ -149,14 +159,17 @@ def main(unused_argv):
         logging.getLogger().addHandler(file_handler)
 
         # Save a record of flags as a .json file in train_dir
-        with open(os.path.join(FLAGS.train_dir, "flags.json"), 'w') as fout:
-            json.dump(FLAGS.__flags, fout)
+        # with open(os.path.join(FLAGS.train_dir, "flags.json"), 'w') as fout:
+        #     json.dump(FLAGS, fout)
 
         # Make bestmodel dir if necessary
         if not os.path.exists(bestmodel_dir):
             os.makedirs(bestmodel_dir)
 
         with tf.Session(config=config) as sess:
+            if FLAGS.debug:
+                from tensorflow.python import debug as tf_debug
+                sess = tf_debug.LocalCLIDebugWrapperSession(sess)
 
             # Load most recent model
             initialize_model(sess, qa_model, FLAGS.train_dir, expect_exists=False)

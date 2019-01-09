@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="PYTHON_MODULE" version="4">
+  <component name="NewModuleRootManager">
+    <content url="file://$MODULE_DIR$">
+      <excludeFolder url="file://$MODULE_DIR$/assignment1/utils/datasets" />
+      <excludeFolder url="file://$MODULE_DIR$/assignment2/data" />
+      <excludeFolder url="file://$MODULE_DIR$/assignment3/data" />
+      <excludeFolder url="file://$MODULE_DIR$/assignment3/results" />
+      <excludeFolder url="file://$MODULE_DIR$/data" />
+    </content>
+    <orderEntry type="jdk" jdkName="Python 2.7" jdkType="Python SDK" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module" module-name="CNN-models" />
+    <orderEntry type="module" module-name="alpha" />
+    <orderEntry type="module" module-name="alpha" />
+  </component>
+</module>
